@@ -1,0 +1,136 @@
+:root{
+  /* هوية بيضاء مع تركواز */
+  --bg:#ffffff;
+  --ink:#0f172a;
+  --muted:#6b7280;
+  --panel:#ffffff;
+  --border:#e5e7eb;
+  --teal:#0ea5a8;
+  --teal-600:#0b8e90;
+  --accent:#22c55e;
+  --accent-600:#16a34a;
+  --shadow:0 8px 30px rgb(2 62 67 / 10%);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:"Tajawal",system-ui,-apple-system,Segoe UI,Roboto,"Noto Naskh Arabic",sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
+
+.container{max-width:1000px; margin:32px auto 80px; padding:0 16px}
+
+/* اللوجو */
+.top-logo {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 20px;
+}
+
+.top-logo img {
+  height: 90px;   /* كبرناه من 60px إلى 90px */
+  width: auto;
+}
+
+.page-header h1{margin:0 0 6px; font-size:clamp(22px,3vw,34px); color:var(--teal)}
+/* نص التوضيح بالأسود */
+.lead{margin:0 0 18px; color:#000; line-height:1.9}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* بطاقات */
+.form-card,.table-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+
+.row{
+  display:grid;
+  grid-template-columns:160px 1fr;
+  gap:14px;
+  align-items:center;
+  margin:12px 0;
+}
+label{color:#334155; font-weight:600}
+
+.input,.select{
+  width:100%;
+  background:#fff;
+  color:var(--ink);
+  padding:12px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  outline:none;
+  transition:border .2s, box-shadow .2s;
+}
+.input:focus,.select:focus{border-color:#cbd5e1; box-shadow:0 0 0 3px rgb(14 165 168 / 18%)}
+
+.action-group{display:flex; gap:10px; flex-wrap:wrap}
+
+.btn{
+  background:#fff; color:var(--ink); border:1px solid var(--border);
+  padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700;
+  transition:transform .04s ease, background .2s, border-color .2s, color .2s;
+}
+.btn:hover{border-color:#cbd5e1}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--teal); color:#fff; border-color:transparent}
+.btn-primary:hover{background:var(--teal-600)}
+.btn-accent{background:var(--accent); color:#06220e; border-color:transparent}
+.btn-accent:hover{background:var(--accent-600)}
+.btn-ghost{background:#fff; border-color:#d1d5db; color:#334155}
+.btn-ghost:hover{background:#f8fafc}
+
+.actions{display:flex; align-items:center; gap:12px; margin-top:12px}
+
+.status{
+  margin-inline-start:auto; padding:6px 10px; border-radius:999px;
+  font-weight:800; font-size:13px; border:1px solid #e2e8f0;
+}
+.status.ok{background:rgba(34,197,94,.12); color:#166534}
+.status.warn{background:rgba(245,158,11,.15); color:#92400e}
+.status.err{background:rgba(239,68,68,.12); color:#991b1b}
+
+.hint{color:#036b70; margin-top:8px; min-height:20px}
+
+/* جدول: 4 أعمدة (الاسم – الحركة – الموقع – الوقت) */
+.table-head,.table-body>div{
+  display:grid;
+  grid-template-columns: 180px 120px 1fr 180px;
+  gap:14px;
+  align-items:center;
+}
+.table-head{
+  color:#155e60; border-bottom:1px dashed #dbe7e8; padding:8px 4px 12px; margin-bottom:6px; font-weight:700;
+}
+.row-item{ padding:12px 6px; border-bottom:1px dashed #e5f3f4 }
+.location{ color:#0b3f43 }
+.time{ color:#475569; font-family:ui-monospace,Menlo,Consolas,monospace }
+/* رسالة الفراغ بالأسود */
+.empty{ color:#000; padding:18px 6px; text-align:center }
+
+/* شارات الحركة */
+.badge{display:inline-flex; align-items:center; justify-content:center; padding:4px 10px; border-radius:999px; font-weight:800; font-size:12px}
+.badge.in{ background:rgba(14,165,233,.15); color:#0369a1 }  /* دخول */
+.badge.out{background:rgba(239,68,68,.15); color:#991b1b }  /* انصراف */
+
+/* اقتراحات البحث */
+.search-wrap{ position:relative }
+.suggestions{
+  position:absolute; inset-inline:0; top:100%; margin-top:6px; list-style:none; padding:6px 0;
+  background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); max-height:260px; overflow:auto; z-index:30;
+}
+.suggestions li{ padding:10px 12px; cursor:pointer; color:#0f172a }
+.suggestions li:hover{ background:#f1f5f9 }
+.suggestions.hidden{ display:none }
+
+/* Responsive */
+@media (max-width:720px){
+  .row{grid-template-columns:1fr; gap:8px}
+  .table-head,.table-body>div{grid-template-columns: 140px 100px 1fr 140px}
+}

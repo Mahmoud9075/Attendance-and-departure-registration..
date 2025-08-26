@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>تسجيل حضور/انصراف الموظفين</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+
+    <!-- اللوجو أعلى الصفحة -->
+    <div class="top-logo">
+      <img src="logo.png" alt="HURMOZ Logo" />
+    </div>
+
+    <header class="page-header">
+      <!-- تم حذف الدبوس -->
+      <h1>تسجيل حضور/انصراف الموظفين</h1>
+      <p class="lead">
+        اختر اسمك ثم اضغط تسجيل الآن. الموقع سيظهر نصيًا (الدولة – المحافظة – المكان بالضبط)،
+        ويتم حفظ السجل محليًا، ويمكن إرساله إلى Google Sheets عند تفعيل الربط.
+      </p>
+    </header>
+
+    <section class="form-card">
+      <div class="row">
+        <label for="search">بحث عن الاسم</label>
+        <div class="search-wrap">
+          <input id="search" type="text" class="input" placeholder="ابدأ الكتابة للبحث…" autocomplete="off" />
+          <ul id="suggestions" class="suggestions hidden"></ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="employee">اسم الموظف</label>
+        <select id="employee" class="select">
+          <option value="" selected>— اختر —</option>
+          <!-- تُملأ من JS -->
+        </select>
+      </div>
+
+      <div class="row">
+        <label>الحركة</label>
+        <div class="action-group" role="group" aria-label="نوع الحركة">
+          <button id="btn-in"  class="btn btn-primary" type="button" data-action="دخول">دخول</button>
+          <button id="btn-out" class="btn"             type="button" data-action="انصراف">انصراف</button>
+        </div>
+      </div>
+
+    <div class="actions">
+  <button id="submitBtn" class="btn btn-accent" type="button">تسجيل الآن</button>
+  <button id="clearLocalBtn" class="btn btn-ghost" type="button">مسح السجلات المحلية</button>
+  <span id="statusDot" class="status ok">جاهز</span>
+  <span id="accuracyBadge" class="status" style="margin-inline-start:8px;">دقة: —</span>
+</div>
+
+
+      <div id="hint" class="hint"></div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-head">
+        <div>الاسم</div>
+        <div>الحركة</div>
+        <div>الموقع</div>
+        <div>الوقت</div>
+      </div>
+      <div id="logBody" class="table-body">
+        <div class="empty">لا توجد سجلات بعد</div>
+      </div>
+    </section>
+
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
