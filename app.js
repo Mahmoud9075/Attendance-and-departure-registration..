@@ -1,5 +1,6 @@
 // ========= الإعدادات =========
-const SCRIPT_URL = "https://script.google.com/macros/s/PUT_YOUR_EXEC_LINK_HERE/exec"; // ← ضع رابط /exec
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyJ7esfotCOd_V_cYw6OCzUKM6wVOgHXdiP9-HfMhvFgDWTUiZrowOpqURgMVFkaeE/exec";
+// ← ضع رابط /exec
 // ضيف/عدّل قائمة الموظفين هنا
 const EMPLOYEES = [
   "أحمد علي",
@@ -207,3 +208,4 @@ document.addEventListener("click", (e) => {
     suggestionsUl.classList.add("hidden");
   }
 });
+
