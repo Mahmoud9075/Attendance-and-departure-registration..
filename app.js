@@ -1,247 +1,209 @@
-/* ========= إعدادات عامة ========= */
-
-// رابط Google Apps Script (الوسيط بدل الاتصال المباشر مع Airtable)
-const GOOGLE_APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyltIxNss4C1MQanIB9HrvX94AvIxvIemC1SxwbcSqvCkBLKW6Szw79RqUlTSEr4gyU/exec";
-
-// (اختياري) رابط Airtable Webhook المباشر (سيتم تعطيله لتفادي CORS)
-const AIRTABLE_WEBHOOK_URL = "";
-
-/* ===== تخزين/عرض محلي: نحتفظ بآخر تسجيل لكل موظف فقط ===== */
-const SAVE_LOCALLY   = true;  // نخزن آخر تسجيل (يستبدل القديم)
-const SHOW_LOCAL_LOG = true;  // نعرض بطاقة واحدة بآخر تسجيل للموظف المختار
-
-// أسماء الموظفين
+// ========= الإعدادات =========
+const SCRIPT_URL = "https://script.google.com/macros/s/PUT_YOUR_EXEC_LINK_HERE/exec"; // ← ضع رابط /exec
+// ضيف/عدّل قائمة الموظفين هنا
 const EMPLOYEES = [
-  "Amna Al-Shehhi","Saman","Sufiyan","Subhan","Vangelyn","Swaroop","Nada Farag","Aya","Maysa",
-  "Rajeh","Jaber","Ali amallah","Riham Al-Abri","Maryam Al-Futaisi","Salma Al-Shibli","Raqia Al-Suri",
-  "Jihad | Operations","Nada | Operations","Aisha | Operations","Kholoud | Operations","Israa – Hormuz Designer",
-  "Mona Ibrahim","Trusila Thuo","Kholoud | Marketing","Alia | Marketing"
+  "أحمد علي",
+  "محمود إبراهيم",
+  "محمد حسن",
+  "سارة عصام",
+  "هند أشرف"
 ];
 
-/* ========= مراجع عناصر الواجهة ========= */
-const searchInput    = document.getElementById("search");
-const suggestionsEl  = document.getElementById("suggestions");
-const employeeSelect = document.getElementById("employee");
-const btnIn          = document.getElementById("btn-in");
-const btnOut         = document.getElementById("btn-out");
-const submitBtn      = document.getElementById("submitBtn");
-const clearLocalBtn  = document.getElementById("clearLocalBtn");
-const statusDot      = document.getElementById("statusDot");
-const accuracyBadge  = document.getElementById("accuracyBadge");
-const hint           = document.getElementById("hint");
-const logBody        = document.getElementById("logBody");
+// ========= عناصر DOM =========
+const employeeSel   = document.getElementById("employee");
+const searchInput   = document.getElementById("search");
+const suggestionsUl = document.getElementById("suggestions");
+const btnIn         = document.getElementById("btn-in");
+const btnOut        = document.getElementById("btn-out");
+const submitBtn     = document.getElementById("submitBtn");
+const clearLocalBtn = document.getElementById("clearLocalBtn");
+const statusDot     = document.getElementById("statusDot");
+const accuracyBadge = document.getElementById("accuracyBadge");
+const logBody       = document.getElementById("logBody");
+const hint          = document.getElementById("hint");
 
-let currentAction = "دخول";
+// ========= حالة التطبيق =========
+let selectedAction = "دخول"; // افتراضي
+let lastGeo = { lat: "", lon: "", accuracy: "" };
 
-/* ========= تهيئة ========= */
-(function init(){
-  fillEmployees(EMPLOYEES);
-  setActionButton("دخول");
-
-  if (!SHOW_LOCAL_LOG && logBody)      logBody.style.display = "none";
-  if (!SAVE_LOCALLY  && clearLocalBtn) clearLocalBtn.style.display = "none";
-
-  if (SHOW_LOCAL_LOG) renderLocalLog();
-})();
-
-/* ========= تعبئة قائمة الأسماء ========= */
-function fillEmployees(list){
-  if (!employeeSelect) return;
-  employeeSelect.querySelectorAll("option:not(:first-child)").forEach(o=>o.remove());
-  list.forEach(name=>{
-    const opt=document.createElement("option");
-    opt.value=name; opt.textContent=name;
-    employeeSelect.appendChild(opt);
-  });
+// ========= وظائف مساعدة =========
+function setStatus(text, type = "ok") {
+  statusDot.textContent = text;
+  statusDot.className = `status ${type}`;
 }
 
-/* ========= اقتراحات البحث ========= */
-function showSuggestions(items){
-  if (!suggestionsEl) return;
-  suggestionsEl.innerHTML = "";
-  if(!items.length){ suggestionsEl.classList.add("hidden"); return; }
-  items.forEach(name=>{
-    const li=document.createElement("li");
-    li.textContent=name;
-    li.addEventListener("mousedown", e=>{
-      e.preventDefault();
-      if (searchInput) searchInput.value = name;
-      suggestionsEl.classList.add("hidden");
-      fillEmployees([name]);
-      if (employeeSelect) employeeSelect.value = name;
-      if (SHOW_LOCAL_LOG) renderLocalLog();
-    });
-    suggestionsEl.appendChild(li);
-  });
-  suggestionsEl.classList.remove("hidden");
+function showHint(text, type = "info") {
+  hint.textContent = text || "";
+  hint.className = `hint ${type}`;
 }
 
-if (searchInput){
-  searchInput.addEventListener("input", ()=>{
-    const q = searchInput.value.trim().toLowerCase();
-    const filtered = EMPLOYEES.filter(n => n.toLowerCase().includes(q));
-    fillEmployees(filtered.length ? filtered : EMPLOYEES);
-    if(q){ showSuggestions(filtered.slice(0,20)); }
-    else if (suggestionsEl) { suggestionsEl.classList.add("hidden"); }
-  });
-
-  searchInput.addEventListener("focus", ()=>{
-    const q = searchInput.value.trim().toLowerCase();
-    if(!q) return;
-    const filtered = EMPLOYEES.filter(n => n.toLowerCase().includes(q));
-    showSuggestions(filtered.slice(0,20));
-  });
-
-  document.addEventListener("click", (e)=>{
-    if(!e.target.closest(".search-wrap") && suggestionsEl){
-      suggestionsEl.classList.add("hidden");
-    }
-  });
+function fmtTime(d = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const h = d.getHours();
+  const m = pad(d.getMinutes());
+  const ampm = h < 12 ? "صباحًا" : "مساءً";
+  const h12 = ((h + 11) % 12) + 1;
+  const date = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return { human: `${date} ${h12}:${m} ${ampm}`, iso: d.toISOString() };
 }
 
-/* ========= تبديل الحركة ========= */
-if (btnIn)  btnIn.addEventListener("click",()=> setActionButton("دخول"));
-if (btnOut) btnOut.addEventListener("click",()=> setActionButton("انصراف"));
-
-function setActionButton(action){
-  currentAction = action;
-  if(!btnIn || !btnOut) return;
-  if(action==="دخول"){ btnIn.classList.add("btn-primary"); btnOut.classList.remove("btn-primary"); }
-  else               { btnOut.classList.add("btn-primary"); btnIn.classList.remove("btn-primary"); }
+function saveLocal(record) {
+  const arr = JSON.parse(localStorage.getItem("attendance_logs") || "[]");
+  arr.unshift(record);
+  localStorage.setItem("attendance_logs", JSON.stringify(arr));
 }
 
-/* ========= زر تسجيل الآن ========= */
-if (submitBtn){
-  submitBtn.addEventListener("click", onSubmit);
+function loadLocal() {
+  return JSON.parse(localStorage.getItem("attendance_logs") || "[]");
 }
 
-async function onSubmit(){
-  if (hint) hint.textContent="";
-  const name=(employeeSelect?.value||"").trim();
-  if(!name){ return setStatus("err","اختر اسم الموظف أولًا."); }
+function renderTable() {
+  const data = loadLocal();
+  logBody.innerHTML = "";
+  if (!data.length) {
+    const div = document.createElement("div");
+    div.className = "empty";
+    div.textContent = "لا توجد سجلات بعد";
+    logBody.appendChild(div);
+    return;
+  }
+  for (const r of data) {
+    const row = document.createElement("div");
+    row.className = "table-row";
+    row.innerHTML = `
+      <div>${r.name}</div>
+      <div>${r.action}</div>
+      <div>${r.locText || (r.lon && r.lat ? `${r.lat}, ${r.lon}` : "—")}</div>
+      <div>${r.timeHuman}</div>
+    `;
+    logBody.appendChild(row);
+  }
+}
 
-  setStatus("warn","جارٍ تحسين دقة الموقع...");
-  try{
-    const pos = await getBestPosition({ desiredAccuracy: 30, hardTimeoutMs: 10000 });
+function fillEmployees() {
+  for (const n of EMPLOYEES) {
+    const opt = document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    employeeSel.appendChild(opt);
+  }
+}
+
+// ========= جلب الموقع (اختياري) =========
+function fetchGeo() {
+  if (!navigator.geolocation) {
+    accuracyBadge.textContent = "دقة: —";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition((pos) => {
     const { latitude, longitude, accuracy } = pos.coords;
-
-    const pretty = await reverseGeocodePrecise(latitude, longitude);
-
-    const now = new Date();
-    const record = {
-      name,
-      action: currentAction,
-      address_text: pretty.text,
-      lat: latitude,
-      lon: longitude,
-      accuracy: Math.round(accuracy),
-      timestamp_iso: now.toISOString(),
-      time_hhmm: now.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})
-    };
-
-    if (SAVE_LOCALLY) upsertLocalRecord(record);
-
-    // إرسال للـ Google Apps Script (الوسيط)
-    try{
-      await fetch(GOOGLE_APPS_SCRIPT_URL,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(record)
-      });
-    }catch(err){ console.error("Google Apps Script error", err); }
-
-    setStatus("ok","تم التسجيل بنجاح.");
-    if (accuracyBadge) accuracyBadge.textContent = `دقة: ${record.accuracy}م`;
-    if (hint)           hint.textContent = `الموقع: ${record.address_text}`;
-
-    if (SHOW_LOCAL_LOG) renderLocalLog();
-
-  }catch(err){
-    console.error(err);
-    setStatus("err","تعذّر تحديد الموقع بدقة. فعّل GPS وحاول مجددًا.");
-    if (accuracyBadge) accuracyBadge.textContent = "دقة: —";
-  }
+    lastGeo = { lat: latitude.toFixed(6), lon: longitude.toFixed(6), accuracy: Math.round(accuracy) };
+    accuracyBadge.textContent = `دقة: ~${lastGeo.accuracy}m`;
+  }, () => {
+    accuracyBadge.textContent = "دقة: غير متاح";
+  }, { enableHighAccuracy: true, timeout: 7000, maximumAge: 15000 });
 }
 
-/* ========= تحديد الموقع ========= */
-function getBestPosition({ desiredAccuracy = 30, hardTimeoutMs = 10000 } = {}) {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Geolocation unavailable"));
-    let best = null; let resolved = false;
-    const success = (pos) => {
-      const { accuracy } = pos.coords;
-      if (!best || accuracy < best.coords.accuracy) best = pos;
-      if (!resolved && accuracy <= desiredAccuracy) {
-        resolved = true;
-        navigator.geolocation.clearWatch(wid);
-        clearTimeout(timer);
-        resolve(pos);
-      }
-    };
-    const error = (err) => { if (!best) reject(err); };
-    const wid = navigator.geolocation.watchPosition(success, error, {
-      enableHighAccuracy: true, maximumAge: 0, timeout: 15000
+// ========= بحث الأسماء =========
+function filterSuggestions(q) {
+  if (!q) { suggestionsUl.classList.add("hidden"); suggestionsUl.innerHTML = ""; return; }
+  const items = EMPLOYEES.filter(n => n.includes(q.trim())).slice(0, 8);
+  suggestionsUl.innerHTML = "";
+  if (!items.length) { suggestionsUl.classList.add("hidden"); return; }
+  for (const it of items) {
+    const li = document.createElement("li");
+    li.textContent = it;
+    li.addEventListener("click", () => {
+      employeeSel.value = it;
+      searchInput.value = it;
+      suggestionsUl.classList.add("hidden");
     });
-    const timer = setTimeout(() => {
-      navigator.geolocation.clearWatch(wid);
-      if (best) { resolved = true; resolve(best); }
-      else reject(new Error("Timeout: لم نتمكن من الحصول على موقع جيد"));
-    }, hardTimeoutMs);
-  });
-}
-
-/* ========= Reverse Geocoding ========= */
-async function reverseGeocodePrecise(lat, lon) {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=ar&zoom=18&addressdetails=1&lat=${lat}&lon=${lon}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  const a = data.address || {};
-  const country     = a.country || "";
-  const governorate = a.state || a.region || "";
-  const city        = a.city || a.town || a.village || "";
-  const exactParts = [a.road, a.neighbourhood].filter(Boolean);
-  const exact = exactParts.join("، ");
-  const text = [country, governorate, exact || city].filter(Boolean).join(" – ");
-  return { text: text || "غير محدد" };
-}
-
-/* ========= تخزين/عرض محلي ========= */
-function getLocalMap(){
-  try{ return JSON.parse(localStorage.getItem("attendanceLastByName") || "{}"); }
-  catch{ return {}; }
-}
-function setLocalMap(map){ localStorage.setItem("attendanceLastByName", JSON.stringify(map)); }
-function upsertLocalRecord(rec){ const map = getLocalMap(); map[rec.name] = rec; setLocalMap(map); }
-function getLastRecordFor(name){ return getLocalMap()[name] || null; }
-function renderLocalLog(){
-  if (!SHOW_LOCAL_LOG || !logBody) return;
-  const selected=(employeeSelect?.value||"").trim();
-  logBody.innerHTML="";
-  const r = getLastRecordFor(selected);
-  if (!r){
-    const div=document.createElement("div");
-    div.className="empty"; div.textContent="لا يوجد تسجيل سابق لهذا الموظف";
-    logBody.appendChild(div); return;
+    suggestionsUl.appendChild(li);
   }
-  const wrap=document.createElement("div"); wrap.className="row-item";
-  const name=document.createElement("div"); name.textContent=r.name;
-  const action=document.createElement("div");
-  const badge=document.createElement("span");
-  badge.className="badge " + (r.action==="دخول" ? "in" : "out");
-  badge.textContent=r.action; action.appendChild(badge);
-  const loc=document.createElement("div"); loc.className="location"; loc.textContent=r.address_text || "—";
-  const time=document.createElement("div"); time.className="time";
-  const dt=new Date(r.timestamp_iso);
-  time.innerHTML=`<span style="direction:ltr; display:inline-block;">${dt.toLocaleDateString("ar-EG")} ${dt.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}</span>`;
-  wrap.appendChild(name); wrap.appendChild(action); wrap.appendChild(loc); wrap.appendChild(time);
-  logBody.appendChild(wrap);
+  suggestionsUl.classList.remove("hidden");
 }
 
-/* ========= حالة الواجهة ========= */
-function setStatus(kind, text){
-  if (!statusDot) return;
-  statusDot.classList.remove("ok","warn","err");
-  statusDot.classList.add(kind);
-  statusDot.textContent=text;
+// ========= إرسال للسيرفر (GAS) =========
+async function sendToServer(payloadObj) {
+  // نبعته كـ FormData لتجنّب preflight
+  const fd = new FormData();
+  Object.entries(payloadObj).forEach(([k, v]) => fd.append(k, v ?? ""));
+
+  const res = await fetch(SCRIPT_URL, { method: "POST", body: fd });
+  // قد يرجع JSON أو نص عادي حسب سكربتك — هنعمل محاولة قراءة كنص
+  return res.text();
 }
+
+// ========= الأحداث =========
+btnIn.addEventListener("click", () => {
+  selectedAction = "دخول";
+  btnIn.classList.add("btn-primary");
+  btnOut.classList.remove("btn-primary");
+});
+
+btnOut.addEventListener("click", () => {
+  selectedAction = "انصراف";
+  btnOut.classList.add("btn-primary");
+  btnIn.classList.remove("btn-primary");
+});
+
+submitBtn.addEventListener("click", async () => {
+  const name = (employeeSel.value || "").trim() || (searchInput.value || "").trim();
+  if (!name) { showHint("رجاء اختر/اكتب الاسم.", "warn"); return; }
+
+  const t = fmtTime();
+  const record = {
+    name,
+    action: selectedAction,
+    timeIso: t.iso,
+    timeHuman: t.human,
+    lat: lastGeo.lat,
+    lon: lastGeo.lon,
+    accuracy: lastGeo.accuracy,
+    address_text: "" // ممكن تملّيها لاحقًا لو عملت Reverse Geocoding
+  };
+
+  try {
+    setStatus("جارٍ الإرسال…", "busy");
+    const serverResp = await sendToServer({
+      name: record.name,
+      action: record.action,
+      timestamp_iso: record.timeIso,
+      lat: record.lat,
+      lon: record.lon,
+      accuracy: record.accuracy,
+      address_text: record.address_text
+    });
+
+    saveLocal(record);
+    renderTable();
+    showHint("تم التسجيل بنجاح ✅", "ok");
+    setStatus("جاهز", "ok");
+    console.log("Server:", serverResp);
+  } catch (e) {
+    console.error(e);
+    showHint("فشل الإرسال، تم الحفظ محليًا ويمكن الإرسال لاحقًا.", "error");
+    setStatus("خطأ", "error");
+    // نحفظ محلي برضه علشان مايضيعش
+    saveLocal(record);
+    renderTable();
+  }
+});
+
+clearLocalBtn.addEventListener("click", () => {
+  localStorage.removeItem("attendance_logs");
+  renderTable();
+  showHint("تم مسح السجلات المحلية.", "ok");
+});
+
+// ========= تشغيل أولي =========
+fillEmployees();
+renderTable();
+fetchGeo();
+setInterval(fetchGeo, 20000); // حدّث الموقع كل فترة بسيطة
+searchInput.addEventListener("input", (e) => filterSuggestions(e.target.value));
+document.addEventListener("click", (e) => {
+  if (!suggestionsUl.contains(e.target) && e.target !== searchInput) {
+    suggestionsUl.classList.add("hidden");
+  }
+});
