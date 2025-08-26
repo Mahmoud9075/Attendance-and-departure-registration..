@@ -15,11 +15,9 @@
     </div>
 
     <header class="page-header">
-      <!-- تم حذف الدبوس -->
       <h1>تسجيل حضور/انصراف الموظفين</h1>
       <p class="lead">
-        اختر اسمك ثم اضغط تسجيل الآن. الموقع سيظهر نصيًا (الدولة – المحافظة – المكان بالضبط)،
-        ويتم حفظ السجل محليًا، ويمكن إرساله إلى Google Sheets عند تفعيل الربط.
+        اختر اسمك ثم اضغط تسجيل الآن. يتم حفظ سجل محليًا وإرساله عبر Google Apps Script إلى Airtable.
       </p>
     </header>
 
@@ -48,13 +46,12 @@
         </div>
       </div>
 
-    <div class="actions">
-  <button id="submitBtn" class="btn btn-accent" type="button">تسجيل الآن</button>
-  <button id="clearLocalBtn" class="btn btn-ghost" type="button">مسح السجلات المحلية</button>
-  <span id="statusDot" class="status ok">جاهز</span>
-  <span id="accuracyBadge" class="status" style="margin-inline-start:8px;">دقة: —</span>
-</div>
-
+      <div class="actions">
+        <button id="submitBtn" class="btn btn-accent" type="button">تسجيل الآن</button>
+        <button id="clearLocalBtn" class="btn btn-ghost" type="button">مسح السجلات المحلية</button>
+        <span id="statusDot" class="status ok">جاهز</span>
+        <span id="accuracyBadge" class="status" style="margin-inline-start:8px;">دقة: —</span>
+      </div>
 
       <div id="hint" class="hint"></div>
     </section>
